@@ -2,6 +2,7 @@
 import random
 
 class DES:
+    # TODO key generation
     def __init__(self, key, message):
         self.key = key if type(key) is bytearray else bytearray(key)
         self.ciphertext = message if type(message) is bytearray else bytearray(message)

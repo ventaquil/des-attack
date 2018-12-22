@@ -8,7 +8,7 @@ def message_from_differential(original, differential):
     return bytearray([m ^ d for (m, d) in zip(original, differential)])
 
 def bytearray_to_hex(array):
-    return "".join("{:0>2x}".format(x) for x in array)
+    return "".join("{:0>2X}".format(x) for x in array)
 
 if __name__ == "__main__":
     message = random_message()
@@ -23,5 +23,7 @@ if __name__ == "__main__":
     des = DES(key)
     ciphertext = des.encrypt(message)
     plaintext = des.decrypt(ciphertext)
+
+    print ("ciphertext   = " + bytearray_to_hex(ciphertext))
 
     print("Test: " + ("It works" if message == plaintext else "Failed"))

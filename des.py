@@ -108,7 +108,7 @@ def pc1(key):
     return pc1(key)
 
 def pc2(key):
-    pc2 = LinearTransformation((14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7,  27, 20, 13, 2, 41, 52, 31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53,46, 42, 50, 36, 29, 32))
+    pc2 = LinearTransformation((14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2, 41, 52, 31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32))
 
     return pc2(key)
 
@@ -120,11 +120,13 @@ def permutation(data):
 def random_key():
     def set_parity(byte):
         parity = True
-        for i in range(1, 8):
+        for i in range(1, 8): # skip first bit
             parity = not parity if ((byte & (1 << i)) != 0) else parity
 
         if parity:
             byte |= 1
+        else:
+            byte &= 0xFE
 
         return byte
 
@@ -186,11 +188,11 @@ def sboxes(data):
         return (byte & (1 << shift)) >> shift
 
     def get_column(byte):
-        bits = [1, 6]
+        bits = list(range(2, 6))
         return combine_bits([get_bit(byte, bit) for bit in bits])
 
     def get_row(byte):
-        bits = list(range(2, 6))
+        bits = [1, 6]
         return combine_bits([get_bit(byte, bit) for bit in bits])
 
     sboxes = [
@@ -256,10 +258,10 @@ def sboxes(data):
 
         value = data[byte] >> (8 - bit)
         if bit < 6:
-            shift = 8 - (6 - bit)
-            value |= (data[byte - 1] << shift) >> shift
+            value |= data[byte - 1] << bit
+        value &= 0x3F
 
-        result = sboxes[sbox](get_column(value), get_row(value))
+        result = sboxes[sbox](get_row(value), get_column(value))
 
         sboxed[sbox // 2] |= result << (4 * ((sbox + 1) % 2))
 

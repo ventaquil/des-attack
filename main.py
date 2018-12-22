@@ -18,10 +18,10 @@ if __name__ == "__main__":
     print("message      = " + bytearray_to_hex(message))
     print("message'     = " + bytearray_to_hex(message_from_differential(message, differential)))
     print("differential = " + differential)
+    print("key          = " + bytearray_to_hex(key))
 
     des = DES(key)
     ciphertext = des.encrypt(message)
-
     plaintext = des.decrypt(ciphertext)
 
-    print(message == plaintext)
+    print("Test: " + ("It works" if message == plaintext else "Failed"))

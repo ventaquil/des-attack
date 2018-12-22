@@ -2,7 +2,7 @@
 key=$1
 plaintext=$2
 
-echo $plaintext | \
+printf $plaintext | \
     perl -e 'print pack "H*", <STDIN>' | \
     openssl enc -des-ecb -nopad -K $key -nosalt | \
     hexdump -C

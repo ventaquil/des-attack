@@ -1,42 +1,27 @@
 #!/usr/bin/env python3
-from DES import DES
-import random
+from des import Cipher as DES, random_message, random_key
 
-def rand_message():
-    message = random.randint(0, 2 ** 64 - 1)
-    message = "{:0>16x}".format(message)
-    message = bytearray.fromhex(message)
-    return message
+def message_from_differential(original, differential):
+    differential = "{:0>16}".format(differential)
+    differential = bytearray.fromhex(differential)
 
-def rand_key():
-    def set_parity(byte):
-        parity = True
-        for i in range(1, 8):
-            parity = not parity if ((byte & (1 << i)) != 0) else parity
+    return bytearray([m ^ d for (m, d) in zip(original, differential)])
 
-        if parity:
-            byte |= 1
-
-        return byte
-
-    key = random.randint(0, 2 ** 64 - 1)
-    key = "{:0>16x}".format(key)
-    key = bytearray.fromhex(key)
-
-    key = bytearray([set_parity(byte) for byte in key])
-
-    return key
+def bytearray_to_hex(array):
+    return "".join("{:0>2x}".format(x) for x in array)
 
 if __name__ == "__main__":
-    message = rand_message()
-    key = rand_key()
+    message = random_message()
+    key = random_key()
+    differential = "2000000000000caf"
 
-    des = DES(key, message)
-    for i in range(1, 7):
-        des.round(i)
+    print("message      = " + bytearray_to_hex(message))
+    print("message'     = " + bytearray_to_hex(message_from_differential(message, differential)))
+    print("differential = " + differential)
 
-    des = DES(key, des.ciphertext)
-    for i in range(1, 7):
-        des.round(i)
+    des = DES(key)
+    ciphertext = des.encrypt(message)
 
-    print(message == des.ciphertext)
+    plaintext = des.decrypt(ciphertext)
+
+    print(message == plaintext)

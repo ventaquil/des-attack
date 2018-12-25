@@ -68,10 +68,23 @@ def test_random_key():
                 bits += 1
         assert 1 == (bits % 2)
 
-def test_random_message():
-    message = random_message()
-    assert type(message) is bytearray
-    assert len(message) * 8 == 64
+def test_plaintext_random_generator():
+    def test_plaintext(plaintext):
+        assert type(plaintext) is bytearray
+        assert len(plaintext) * 8 == 64
+
+    generator = PlaintextRandomGenerator()
+
+    plaintext = generator.generate()
+    test_plaintext(plaintext)
+
+    difference = bytearray([0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    plaintextes = generator.generate(difference)
+    assert type(plaintextes) is tuple
+    assert len(plaintextes) == 2
+    for plaintext in plaintextes:
+        test_plaintext(plaintext)
+    assert difference == bytearray(p0 ^ p1 for p0, p1 in zip(plaintextes[0], plaintextes[1]))
 
 def test_sbox():
     pattern = [[1, 2], [0, 3]]

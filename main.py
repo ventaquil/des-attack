@@ -1,29 +1,20 @@
 #!/usr/bin/env python3
-from des import Cipher as DES, random_message, random_key
-
-def message_from_differential(original, differential):
-    differential = "{:0>16}".format(differential)
-    differential = bytearray.fromhex(differential)
-
-    return bytearray([m ^ d for (m, d) in zip(original, differential)])
+from des import Cipher as DES, PlaintextRandomGenerator, random_key
 
 def bytearray_to_hex(array):
     return "".join("{:0>2X}".format(x) for x in array)
 
 if __name__ == "__main__":
-    message = random_message()
+    plaintext = PlaintextRandomGenerator().generate()
     key = random_key()
-    differential = "2000000000000caf"
 
-    print("message      = " + bytearray_to_hex(message))
-    print("message'     = " + bytearray_to_hex(message_from_differential(message, differential)))
-    print("differential = " + differential)
-    print("key          = " + bytearray_to_hex(key))
+    print("plaintext  = " + bytearray_to_hex(plaintext))
+    print("key        = " + bytearray_to_hex(key))
 
     des = DES(key)
-    ciphertext = des.encrypt(message)
-    plaintext = des.decrypt(ciphertext)
+    ciphertext = des.encrypt(plaintext)
+    decrypted_plaintext = des.decrypt(ciphertext)
 
-    print ("ciphertext   = " + bytearray_to_hex(ciphertext))
+    print ("ciphertext = " + bytearray_to_hex(ciphertext))
 
-    print("Test: " + ("It works" if message == plaintext else "Failed"))
+    print("Test: " + ("It works" if plaintext == decrypted_plaintext else "Failed"))

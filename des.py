@@ -2,6 +2,24 @@
 from math import ceil, log2
 import random
 
+class PlaintextRandomGenerator:
+    def generate(self, difference=None):
+        # TODO validate difference
+
+        plaintext = random.randint(0, 2 ** 64 - 1)
+        plaintext = "{:0>16x}".format(plaintext)
+        plaintext = bytearray.fromhex(plaintext)
+
+        if difference == None:
+            return plaintext
+
+        plaintext = (
+            plaintext,
+            bytearray(p ^ d for p, d in zip(plaintext, difference))
+        )
+
+        return plaintext
+
 class Sbox:
     def __init__(self, pattern):
         self.pattern = pattern
@@ -137,12 +155,6 @@ def random_key():
     key = bytearray([set_parity(byte) for byte in key])
 
     return key
-
-def random_message():
-    message = random.randint(0, 2 ** 64 - 1)
-    message = "{:0>16x}".format(message)
-    message = bytearray.fromhex(message)
-    return message
 
 def round_key(no, key):
     def rotate(array, rotation):

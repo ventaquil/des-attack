@@ -88,6 +88,13 @@ def test_plaintext_random_generator():
         test_plaintext(plaintext)
     assert difference == bytearray(p0 ^ p1 for p0, p1 in zip(plaintextes[0], plaintextes[1]))
 
+def test_permutation_inverted():
+    dataset = [[0x12, 0x34, 0x56, 0x78], [0xAB, 0xCD, 0xDC, 0xBA], [0x1D, 0xE2, 0x54, 0x16], [0x82, 0x32, 0xAF, 0x3B], [0x23, 0xD7, 0x10, 0xE0]]
+
+    for data in dataset:
+        data = bytearray(data)
+        assert data == permutation_inverted(permutation(data))
+
 def test_sbox():
     pattern = [[1, 2], [0, 3]]
     s0 = Sbox(pattern)

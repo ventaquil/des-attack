@@ -193,6 +193,11 @@ def permutation(data):
 
     return p(data)
 
+def permutation_inverted(data):
+    p_inv = LinearTransformation((9, 17, 23, 31, 13, 28, 2, 18, 24, 16, 30, 6, 26, 20, 10, 1, 8, 14, 25, 3, 4, 29, 11, 19, 32, 12, 22, 7, 5, 27, 15, 21))
+
+    return p_inv(data)
+
 def round_key(no, key):
     def rotate(array, rotation):
         result = [0] * len(array)

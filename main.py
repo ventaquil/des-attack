@@ -15,6 +15,5 @@ if __name__ == "__main__":
     ciphertext = des.encrypt(plaintext)
     decrypted_plaintext = des.decrypt(ciphertext)
 
-    print ("ciphertext = " + bytearray_to_hex(ciphertext))
-
-    print("Test: " + ("It works" if plaintext == decrypted_plaintext else "Failed"))
+    print("ciphertext = " + bytearray_to_hex(ciphertext))
+    print("decrypted  = {0} ({1})".format(bytearray_to_hex(decrypted_plaintext), "valid" if plaintext == decrypted_plaintext else "invalid"))

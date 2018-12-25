@@ -2,6 +2,42 @@
 from math import ceil, log2
 import random
 
+def xor_profile(sbox):
+    # validate sbox
+
+    def combine_bits(bits):
+        combined = 0
+        for (i, j) in zip(reversed(range(len(bits))), range(len(bits))):
+            combined |= bits[i] << j
+        return combined
+
+    def get_bit(byte, no):
+        shift = 6 - no
+        return (byte & (1 << shift)) >> shift
+
+    def get_column(byte):
+        bits = list(range(2, 6))
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    def get_row(byte):
+        bits = [1, 6]
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    profile = [[0] * (2 ** 4) for _ in range(2 ** 6)]
+
+    for data_0 in range(2 ** 6):
+        for data_1 in range(2 ** 6):
+            data = data_0 ^ data_1
+
+            result_0 = sbox(get_row(data_0), get_column(data_0))
+            result_1 = sbox(get_row(data_1), get_column(data_1))
+
+            result = result_0 ^ result_1
+
+            profile[data][result] += 1
+
+    return profile
+
 class KeyRandomGenerator:
     def generate(self):
         def set_parity(byte):

@@ -2,6 +2,28 @@
 from math import ceil, log2
 import random
 
+class KeyRandomGenerator:
+    def generate(self):
+        def set_parity(byte):
+            parity = True
+            for i in range(1, 8): # skip first bit
+                parity = not parity if ((byte & (1 << i)) != 0) else parity
+
+            if parity:
+                byte |= 1
+            else:
+                byte &= 0xFE
+
+            return byte
+
+        key = random.randint(0, 2 ** 64 - 1)
+        key = "{:0>16x}".format(key)
+        key = bytearray.fromhex(key)
+
+        key = bytearray(set_parity(byte) for byte in key)
+
+        return key
+
 class PlaintextRandomGenerator:
     def generate(self, difference=None):
         # TODO validate difference
@@ -134,27 +156,6 @@ def permutation(data):
     p = LinearTransformation((16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25))
 
     return p(data)
-
-def random_key():
-    def set_parity(byte):
-        parity = True
-        for i in range(1, 8): # skip first bit
-            parity = not parity if ((byte & (1 << i)) != 0) else parity
-
-        if parity:
-            byte |= 1
-        else:
-            byte &= 0xFE
-
-        return byte
-
-    key = random.randint(0, 2 ** 64 - 1)
-    key = "{:0>16x}".format(key)
-    key = bytearray.fromhex(key)
-
-    key = bytearray([set_parity(byte) for byte in key])
-
-    return key
 
 def round_key(no, key):
     def rotate(array, rotation):

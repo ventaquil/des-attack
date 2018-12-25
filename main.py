@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-from des import Cipher as DES, PlaintextRandomGenerator, random_key
+from des import Cipher as DES, KeyRandomGenerator, PlaintextRandomGenerator
 
 def bytearray_to_hex(array):
     return "".join("{:0>2X}".format(x) for x in array)
 
 if __name__ == "__main__":
     plaintext = PlaintextRandomGenerator().generate()
-    key = random_key()
+    key = KeyRandomGenerator().generate()
 
     print("plaintext  = " + bytearray_to_hex(plaintext))
     print("key        = " + bytearray_to_hex(key))

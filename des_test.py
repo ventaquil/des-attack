@@ -57,8 +57,10 @@ def test_linear_transformation():
         expected = bytearray(expected)
         assert expected == lt4(data)
 
-def test_random_key():
-    key = random_key()
+def test_key_random_generator():
+    generator = KeyRandomGenerator()
+
+    key = generator.generate()
     assert type(key) is bytearray
     assert len(key) * 8 == 64
     for byte in key:

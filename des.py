@@ -327,13 +327,13 @@ class Cipher:
         self.key = key if type(key) is bytearray else bytearray(key)
         self.rounds = 16
 
-    def encrypt(self, message):
+    def encrypt(self, plaintext):
         def divide(block):
             return (block[:4], block[4:])
 
-        message = initial_permutation(message)
+        plaintext = initial_permutation(plaintext)
 
-        left, right = divide(message)
+        left, right = divide(plaintext)
 
         for round in range(self.rounds):
             round += 1 # increment to use values from 1
@@ -342,13 +342,13 @@ class Cipher:
 
         return initial_permutation_inverted(right + left)
 
-    def decrypt(self, message):
+    def decrypt(self, ciphertext):
         def divide(block):
             return (block[:4], block[4:])
 
-        message = initial_permutation(message)
+        ciphertext = initial_permutation(ciphertext)
 
-        left, right = divide(message)
+        left, right = divide(ciphertext)
 
         for round in range(self.rounds):
             right, left = self._round(self.rounds - round, left, right)

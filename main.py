@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from des import Cipher as DES, KeyRandomGenerator, PlaintextRandomGenerator
+from des import cast_8_bit_to_6_bit, Cipher as DES, differential_attack_6_rounds, KeyRandomGenerator, PlaintextRandomGenerator, round_key
 
 def bytearray_to_hex(array):
     return "".join("{:0>2X}".format(x) for x in array)
 
-if __name__ == "__main__":
+def encryption_decryption():
     difference = bytearray([0x40, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00])
     plaintext, plaintext_ = PlaintextRandomGenerator().generate(difference)
     key = KeyRandomGenerator().generate()
@@ -36,3 +36,20 @@ if __name__ == "__main__":
     print("ciphertext' = " + bytearray_to_hex(ciphertext_))
     print("ciphertext  = {0} (final)".format(bytearray_to_hex(final_ciphertext)))
     print("decrypted   = {0} ({1})".format(bytearray_to_hex(decrypted_plaintext), "valid" if plaintext == decrypted_plaintext else "invalid"))
+
+def break_6_rounds():
+    key = KeyRandomGenerator().generate()
+    cipher = DES(key)
+    difference = bytearray([0x40, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00])
+    attempts = 512 # how many repeat attack
+    possible_keys = differential_attack_6_rounds(cipher, difference, attempts)
+    round_6_key = round_key(6, key)
+    round_6_key_candidate = [key[0]["key"] if len(key) > 0 else -1 for key in possible_keys]
+    print("Valid key: " + str(cast_8_bit_to_6_bit(round_6_key)))
+    print("Key candidate: " + str(round_6_key_candidate))
+
+if __name__ == "__main__":
+    print("Encryption/decryption")
+    encryption_decryption()
+    print("6-round attack")
+    break_6_rounds()

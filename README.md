@@ -10,6 +10,17 @@ Just import and use
     ciphertext = des.encrypt(random_message())
     plaintext = des.decrypt(ciphertext)
 
+## 6-rounds attack
+
+Implemented 6-rounds differential attack allow to break 6 rounds of DES using differential cryptoanalisys.
+
+Example code has been placed in `main.py` file under `break_6_rounds` function.
+
+Output:
+
+    Valid key: [4, 29, 11, 0, 43, 38, 50, 44] # key used by DES in 6th round
+    Key candidate: [-1, 54, -1, -1, 43, 38, 50, 44] # potential keys (-1 inform that we cannot predict value)
+
 ## Tests
 
 Use `pytest` to test prepared unit tests.

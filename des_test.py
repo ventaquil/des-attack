@@ -15,6 +15,15 @@ def test_cipher():
         assert cipher.encrypt(plaintext) == cipher.encrypt(plaintext)
         assert cipher.decrypt(ciphertext) == cipher.decrypt(ciphertext)
 
+def test_function_s():
+    dataset = [[0x64, 0x79, 0x11, 0xCD, 0x7C, 0x74]]
+    results = [[0x97, 0x44, 0xFE, 0x9A]]
+
+    for data, expected in zip(dataset, results):
+        data = bytearray(data)
+        expected = bytearray(expected)
+        assert expected == function_s(data)
+
 def test_linear_transformation():
     pattern = (1, 2, 3, 4, 5, 6, 7, 8)
     lt0 = LinearTransformation(pattern)
@@ -109,12 +118,3 @@ def test_sbox():
     assert 0 == s2(1, 1)
     assert 3 == s2(1, 0)
     assert 2 == s2(0, 1)
-
-def test_sboxes():
-    dataset = [[0x64, 0x79, 0x11, 0xCD, 0x7C, 0x74]]
-    results = [[0x97, 0x44, 0xFE, 0x9A]]
-
-    for data, expected in zip(dataset, results):
-        data = bytearray(data)
-        expected = bytearray(expected)
-        assert expected == sboxes(data)

@@ -38,6 +38,187 @@ def xor_profile(sbox):
 
     return profile
 
+def in_set(sbox, input, output):
+    def combine_bits(bits):
+        combined = 0
+        for (i, j) in zip(reversed(range(len(bits))), range(len(bits))):
+            combined |= bits[i] << j
+        return combined
+
+    def get_bit(byte, no):
+        shift = 6 - no
+        return (byte & (1 << shift)) >> shift
+
+    def get_column(byte):
+        bits = list(range(2, 6))
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    def get_row(byte):
+        bits = [1, 6]
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    values = set()
+
+    for i in range(2 ** 6):
+        j = i ^ input
+        if sbox(get_row(i), get_column(i)) ^ sbox(get_row(j), get_column(j)) == output:
+            values.add(i)
+
+    return bytearray(values)
+
+def test(sbox, input, input_, output):
+    values = set()
+
+    for i in in_set(sbox, input ^ input_, output):
+        values.add(i ^ input)
+
+    return bytearray(values)
+
+def cast_8_bit_to_4_bit(bytes):
+    # TODO validate bytes
+
+    values = []
+    for index in range(len(bytes) * 8 // 4):
+        value = 0
+        byte_index = (index * 4) // 8
+        if (index % 2) == 0:
+            value = (bytes[byte_index] & 0xF0) >> 4
+        elif (index % 2) == 1:
+            value = bytes[byte_index] & 0x0F
+        values.append(value)
+    return values
+
+def cast_8_bit_to_6_bit(bytes):
+    # TODO validate bytes
+
+    values = []
+    for index in range(len(bytes) * 8 // 6):
+        value = 0
+        byte_index = (index * 6) // 8
+        if (index % 4) == 0:
+            value = (bytes[byte_index] & 0xFC) >> 2
+        elif (index % 4) == 1:
+            value = (bytes[byte_index] & 0x03) << 4
+            value |= (bytes[byte_index + 1] & 0xF0) >> 4
+        elif (index % 4) == 2:
+            value = (bytes[byte_index] & 0x0F) << 2
+            value |= (bytes[byte_index + 1] & 0xC0) >> 6
+        elif (index % 4) == 3:
+            value = bytes[byte_index] & 0x3F
+        values.append(value)
+    return values
+
+def differential_attack_6_rounds(cipher, difference, attempts=1):
+    def divide(block):
+        return (block[:4], block[4:])
+
+    def encrypt(data, rounds):
+        left, right = divide(data)
+
+        for round in range(rounds):
+            round += 1
+            right, left = cipher._round(round, left, right)
+
+        return right + left
+
+    def calculate_difference(data_0, data_1):
+        return bytearray(a ^ b for a, b in zip(data_0, data_1))
+
+    difference_left, difference_right = divide(difference)
+
+    sboxes = tuple(get_sboxes())
+
+    profiles = []
+    for sbox in sboxes:
+        profiles.append(xor_profile(sbox))
+    profiles = tuple(profiles)
+
+    keys = [[0] * (2 ** 6) for _ in range(8)]
+
+    plaintext_generator = PlaintextRandomGenerator()
+
+    for attempt in range(attempts):
+        while True:
+            plaintext, plaintext_ = plaintext_generator.generate(difference)
+
+            ciphertext3 = encrypt(plaintext, 3)
+            ciphertext6 = encrypt(plaintext, 6)
+
+            ciphertext3_ = encrypt(plaintext_, 3)
+            ciphertext6_ = encrypt(plaintext_, 6)
+
+            left3, right3 = divide(ciphertext3)
+            left6, right6 = divide(ciphertext6)
+
+            left3_, right3_ = divide(ciphertext3_)
+            left6_, right6_ = divide(ciphertext6_)
+
+            left36 = calculate_difference(left3, left6)
+            left36_ = calculate_difference(left3_, left6_)
+            left = calculate_difference(left36, left36_)
+            left = permutation_inverted(left)
+
+            right36 = calculate_difference(right3, right6)
+            right36_ = calculate_difference(right3_, right6_)
+            right = calculate_difference(right36, right36_)
+            right = function_e(right)
+            right36 = function_e(right36)
+            right36_ = function_e(right36_)
+            right6 = function_e(right6)
+            right6_ = function_e(right6_)
+
+            left = cast_8_bit_to_4_bit(left)
+
+            right6 = cast_8_bit_to_6_bit(right6)
+            right6_ = cast_8_bit_to_6_bit(right6_)
+
+            test2 = test(sboxes[1], right6[1], right6_[1], left[1])
+            test5 = test(sboxes[4], right6[4], right6_[4], left[4])
+            test6 = test(sboxes[5], right6[5], right6_[5], left[5])
+            test7 = test(sboxes[6], right6[6], right6_[6], left[6])
+            test8 = test(sboxes[7], right6[7], right6_[7], left[7])
+
+            if (len(test2) > 0) and (len(test5) > 0) and (len(test6) > 0) and (len(test7) > 0) and (len(test8) > 0):
+                break
+
+        difference_ = cast_8_bit_to_6_bit(difference)
+        right = cast_8_bit_to_6_bit(right)
+
+        for key in cast_8_bit_to_6_bit(test2):
+            key ^= right[1]
+            keys[1][key] += 1
+
+        for key in cast_8_bit_to_6_bit(test5):
+            key ^= right[4]
+            keys[4][key] += 1
+
+        for key in cast_8_bit_to_6_bit(test6):
+            key ^= right[5]
+            keys[5][key] += 1
+
+        for key in cast_8_bit_to_6_bit(test7):
+            key ^= right[6]
+            keys[6][key] += 1
+
+        for key in cast_8_bit_to_6_bit(test8):
+            key ^= right[7]
+            keys[7][key] += 1
+
+    candidates = [[] for _ in range(8)]
+
+    for i in range(8):
+        for key in range(2 ** 6):
+            frequency = keys[i][key]
+
+            if frequency > 0:
+                candidates[i].append({"frequency": frequency, "key": key})
+
+        candidates[i] = sorted(candidates[i], key=lambda candidate: candidate["frequency"])
+        candidates[i] = reversed(candidates[i])
+        candidates[i] = list(candidates[i])
+
+    return candidates
+
 class KeyRandomGenerator:
     def generate(self):
         def set_parity(byte):
@@ -165,6 +346,52 @@ def function_e(data):
 def function_k(data, key):
     return bytearray([d ^ k for (d, k) in zip(data, key)])
 
+def function_s(data):
+    def combine_bits(bits):
+        combined = 0
+        for (i, j) in zip(reversed(range(len(bits))), range(len(bits))):
+            combined |= bits[i] << j
+        return combined
+
+    def get_bit(byte, no):
+        shift = 6 - no
+        return (byte & (1 << shift)) >> shift
+
+    def get_column(byte):
+        bits = list(range(2, 6))
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    def get_row(byte):
+        bits = [1, 6]
+        return combine_bits([get_bit(byte, bit) for bit in bits])
+
+    sboxes = tuple(get_sboxes())
+
+    sboxed = [0] * 4
+
+    byte = 0 # start from 0 byte
+    bit = 6 # get 6 bits (counting from 1)
+
+    for i in range(0, len(data) * 8, 6):
+        sbox = i // 6
+
+        value = data[byte] >> (8 - bit)
+        if bit < 6:
+            value |= data[byte - 1] << bit
+        value &= 0x3F
+
+        result = sboxes[sbox](get_row(value), get_column(value))
+
+        sboxed[sbox // 2] |= result << (4 * ((sbox + 1) % 2))
+
+        bit += 6
+
+        if bit > 8:
+            bit %= 8
+            byte += 1
+
+    return bytearray(sboxed)
+
 def initial_permutation(data):
     ip = LinearTransformation((58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4, 62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8, 57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19, 11, 3, 61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7))
 
@@ -230,26 +457,8 @@ def round_key(no, key):
 
     return pc2(key)
 
-def sboxes(data):
-    def combine_bits(bits):
-        combined = 0
-        for (i, j) in zip(reversed(range(len(bits))), range(len(bits))):
-            combined |= bits[i] << j
-        return combined
-
-    def get_bit(byte, no):
-        shift = 6 - no
-        return (byte & (1 << shift)) >> shift
-
-    def get_column(byte):
-        bits = list(range(2, 6))
-        return combine_bits([get_bit(byte, bit) for bit in bits])
-
-    def get_row(byte):
-        bits = [1, 6]
-        return combine_bits([get_bit(byte, bit) for bit in bits])
-
-    sboxes = [
+def get_sboxes():
+    patterns = [
         [
             (14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7), 
             (0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8), 
@@ -300,32 +509,7 @@ def sboxes(data):
         ]
     ]
 
-    sboxes = [Sbox(pattern) for pattern in sboxes]
-
-    sboxed = [0] * 4
-
-    byte = 0 # start from 0 byte
-    bit = 6 # get 6 bits (counting from 1)
-
-    for i in range(0, len(data) * 8, 6):
-        sbox = i // 6
-
-        value = data[byte] >> (8 - bit)
-        if bit < 6:
-            value |= data[byte - 1] << bit
-        value &= 0x3F
-
-        result = sboxes[sbox](get_row(value), get_column(value))
-
-        sboxed[sbox // 2] |= result << (4 * ((sbox + 1) % 2))
-
-        bit += 6
-
-        if bit > 8:
-            bit %= 8
-            byte += 1
-
-    return bytearray(sboxed)
+    return (Sbox(pattern) for pattern in patterns)
 
 class Cipher:
     def __init__(self, key):
@@ -365,7 +549,7 @@ class Cipher:
 
         keyed = function_k(expanded, key)
 
-        substituted = sboxes(keyed)
+        substituted = function_s(keyed)
 
         permuted = permutation(substituted)
 

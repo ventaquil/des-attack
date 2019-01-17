@@ -141,33 +141,25 @@ def differential_attack_6_rounds(cipher, difference, attempts=1):
         while True:
             plaintext, plaintext_ = plaintext_generator.generate(difference)
 
-            ciphertext3 = encrypt(plaintext, 3)
             ciphertext6 = encrypt(plaintext, 6)
 
-            ciphertext3_ = encrypt(plaintext_, 3)
             ciphertext6_ = encrypt(plaintext_, 6)
 
-            left3, right3 = divide(ciphertext3)
             left6, right6 = divide(ciphertext6)
 
-            left3_, right3_ = divide(ciphertext3_)
             left6_, right6_ = divide(ciphertext6_)
 
-            left36 = calculate_difference(left3, left6)
-            left36_ = calculate_difference(left3_, left6_)
-            left = calculate_difference(left36, left36_)
+            left = calculate_difference(left6, left6_)
+            left = calculate_difference(difference_right, left)
             left = permutation_inverted(left)
 
-            right36 = calculate_difference(right3, right6)
-            right36_ = calculate_difference(right3_, right6_)
-            right = calculate_difference(right36, right36_)
-            right = function_e(right)
-            right36 = function_e(right36)
-            right36_ = function_e(right36_)
+            left = cast_8_bit_to_4_bit(left)
+
+            right = calculate_difference(right6, right6_)
+            right = calculate_difference(difference_left, right)
+
             right6 = function_e(right6)
             right6_ = function_e(right6_)
-
-            left = cast_8_bit_to_4_bit(left)
 
             right6 = cast_8_bit_to_6_bit(right6)
             right6_ = cast_8_bit_to_6_bit(right6_)
@@ -182,6 +174,8 @@ def differential_attack_6_rounds(cipher, difference, attempts=1):
                 break
 
         difference_ = cast_8_bit_to_6_bit(difference)
+
+        right = function_e(right)
         right = cast_8_bit_to_6_bit(right)
 
         for key in cast_8_bit_to_6_bit(test2):

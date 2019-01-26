@@ -108,7 +108,8 @@ def cast_8_bit_to_6_bit(bytes):
         values.append(value)
     return values
 
-def differential_attack_6_rounds(cipher, difference, attempts=1):
+def differential_attack_6_rounds(cipher, difference, attempts=1, subkeys=[]):
+    # TODO validate subkeys
     def divide(block):
         return (block[:4], block[4:])
 
@@ -164,13 +165,11 @@ def differential_attack_6_rounds(cipher, difference, attempts=1):
             right6 = cast_8_bit_to_6_bit(right6)
             right6_ = cast_8_bit_to_6_bit(right6_)
 
-            test2 = test(sboxes[1], right6[1], right6_[1], left[1])
-            test5 = test(sboxes[4], right6[4], right6_[4], left[4])
-            test6 = test(sboxes[5], right6[5], right6_[5], left[5])
-            test7 = test(sboxes[6], right6[6], right6_[6], left[6])
-            test8 = test(sboxes[7], right6[7], right6_[7], left[7])
+            tests = [[]] * len(subkeys)
+            for no, subkey in zip(range(len(subkeys)), subkeys):
+                tests[no] = test(sboxes[subkey], right6[subkey], right6_[subkey], left[subkey])
 
-            if (len(test2) > 0) and (len(test5) > 0) and (len(test6) > 0) and (len(test7) > 0) and (len(test8) > 0):
+            if all(map(lambda result: len(result) > 0, tests)):
                 break
 
         difference_ = cast_8_bit_to_6_bit(difference)
@@ -178,25 +177,10 @@ def differential_attack_6_rounds(cipher, difference, attempts=1):
         right = function_e(right)
         right = cast_8_bit_to_6_bit(right)
 
-        for key in cast_8_bit_to_6_bit(test2):
-            key ^= right[1]
-            keys[1][key] += 1
-
-        for key in cast_8_bit_to_6_bit(test5):
-            key ^= right[4]
-            keys[4][key] += 1
-
-        for key in cast_8_bit_to_6_bit(test6):
-            key ^= right[5]
-            keys[5][key] += 1
-
-        for key in cast_8_bit_to_6_bit(test7):
-            key ^= right[6]
-            keys[6][key] += 1
-
-        for key in cast_8_bit_to_6_bit(test8):
-            key ^= right[7]
-            keys[7][key] += 1
+        for no, subkey in zip(range(len(subkeys)), subkeys):
+            for key in cast_8_bit_to_6_bit(tests[no]):
+                key ^= right[subkey]
+                keys[subkey][key] += 1
 
     candidates = [[] for _ in range(8)]
 

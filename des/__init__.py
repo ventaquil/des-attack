@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-from math import ceil, log2
 import random
+
 
 def xor_profile(sbox):
     # validate sbox
@@ -38,6 +37,7 @@ def xor_profile(sbox):
 
     return profile
 
+
 def in_set(sbox, input, output):
     def combine_bits(bits):
         combined = 0
@@ -66,6 +66,7 @@ def in_set(sbox, input, output):
 
     return bytearray(values)
 
+
 def test(sbox, input, input_, output):
     values = set()
 
@@ -73,6 +74,7 @@ def test(sbox, input, input_, output):
         values.add(i ^ input)
 
     return bytearray(values)
+
 
 def cast_8_bit_to_4_bit(bytes):
     # TODO validate bytes
@@ -87,6 +89,7 @@ def cast_8_bit_to_4_bit(bytes):
             value = bytes[byte_index] & 0x0F
         values.append(value)
     return values
+
 
 def cast_8_bit_to_6_bit(bytes):
     # TODO validate bytes
@@ -108,6 +111,7 @@ def cast_8_bit_to_6_bit(bytes):
         values.append(value)
     return values
 
+
 def differential_attack_6_rounds(cipher, difference, attempts=1, subkeys=[]):
     # TODO validate subkeys
     def divide(block):
@@ -128,11 +132,6 @@ def differential_attack_6_rounds(cipher, difference, attempts=1, subkeys=[]):
     difference_left, difference_right = divide(difference)
 
     sboxes = tuple(get_sboxes())
-
-    profiles = []
-    for sbox in sboxes:
-        profiles.append(xor_profile(sbox))
-    profiles = tuple(profiles)
 
     keys = [[0] * (2 ** 6) for _ in range(8)]
 
@@ -172,8 +171,6 @@ def differential_attack_6_rounds(cipher, difference, attempts=1, subkeys=[]):
             if all(map(lambda result: len(result) > 0, tests)):
                 break
 
-        difference_ = cast_8_bit_to_6_bit(difference)
-
         right = function_e(right)
         right = cast_8_bit_to_6_bit(right)
 
@@ -197,11 +194,12 @@ def differential_attack_6_rounds(cipher, difference, attempts=1, subkeys=[]):
 
     return candidates
 
+
 class KeyRandomGenerator:
     def generate(self):
         def set_parity(byte):
             parity = True
-            for i in range(1, 8): # skip first bit
+            for i in range(1, 8):  # skip first bit
                 parity = not parity if ((byte & (1 << i)) != 0) else parity
 
             if parity:
@@ -218,6 +216,7 @@ class KeyRandomGenerator:
         key = bytearray(set_parity(byte) for byte in key)
 
         return key
+
 
 class PlaintextRandomGenerator:
     def generate(self, difference=None):
@@ -237,6 +236,7 @@ class PlaintextRandomGenerator:
 
         return plaintext
 
+
 class Sbox:
     def __init__(self, pattern):
         self.pattern = pattern
@@ -253,6 +253,7 @@ class Sbox:
         # TODO validation
         self._pattern = pattern
 
+
 class LinearTransformation:
     def __init__(self, pattern):
         self.pattern = pattern
@@ -261,7 +262,7 @@ class LinearTransformation:
         if type(bytes) is not bytearray:
             raise Exception("Input data is not bytearray")
 
-        #if ((len(bytes) * 8) < len(self.pattern)) or ((len(bytes) * 8) < max(self.pattern)):
+        # if ((len(bytes) * 8) < len(self.pattern)) or ((len(bytes) * 8) < max(self.pattern)):
         #    raise Exception("Input data length not match to pattern length")
 
         def get_bit(byte, no):
@@ -285,7 +286,7 @@ class LinearTransformation:
         for i in range(size):
             for (j, k) in zip(self.pattern[i * 8:(i + 1) * 8], range(8)):
                 if j > 0:
-                    j -= 1 # decrement because values start from 1
+                    j -= 1  # decrement because values start from 1
                     byte = bytes[j // 8]
                     bit = get_bit(byte, j % 8)
                     transformated[i] = set_bit(transformated[i], k, bit)
@@ -308,7 +309,7 @@ class LinearTransformation:
             if type(value) is not int:
                 raise Exception("Pattern must contains positive integers")
 
-            #if value > len(pattern):
+            # if value > len(pattern):
             #    raise Exception("Values in pattern cannot be greater than pattern length")
 
             if value < 0:
@@ -316,13 +317,17 @@ class LinearTransformation:
 
         self._pattern = pattern
 
+
 def function_e(data):
-    e = LinearTransformation((32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 14, 15, 16, 17, 16, 17, 18, 19, 20, 21, 20, 21, 22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1))
+    e = LinearTransformation((32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 14, 15, 16, 17, 16, 17,
+                              18, 19, 20, 21, 20, 21, 22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1))
 
     return e(data)
 
+
 def function_k(data, key):
     return bytearray([d ^ k for (d, k) in zip(data, key)])
+
 
 def function_s(data):
     def combine_bits(bits):
@@ -347,8 +352,8 @@ def function_s(data):
 
     sboxed = [0] * 4
 
-    byte = 0 # start from 0 byte
-    bit = 6 # get 6 bits (counting from 1)
+    byte = 0  # start from 0 byte
+    bit = 6  # get 6 bits (counting from 1)
 
     for i in range(0, len(data) * 8, 6):
         sbox = i // 6
@@ -370,15 +375,22 @@ def function_s(data):
 
     return bytearray(sboxed)
 
+
 def initial_permutation(data):
-    ip = LinearTransformation((58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4, 62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8, 57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19, 11, 3, 61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7))
+    ip = LinearTransformation((58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4, 62, 54, 46, 38, 30, 22, 14,
+                               6, 64, 56, 48, 40, 32, 24, 16, 8, 57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19,
+                               11, 3, 61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7))
 
     return ip(data)
 
+
 def initial_permutation_inverted(data):
-    ip_inv = LinearTransformation((40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30, 37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27, 34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25))
+    ip_inv = LinearTransformation((40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22,
+                                   62, 30, 37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11,
+                                   51, 19, 59, 27, 34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25))
 
     return ip_inv(data)
+
 
 def pc1(key):
     c = (57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36)
@@ -388,20 +400,28 @@ def pc1(key):
 
     return pc1(key)
 
+
 def pc2(key):
-    pc2 = LinearTransformation((14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2, 41, 52, 31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32))
+    pc2 = LinearTransformation((14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2,
+                                41, 52, 31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36,
+                                29, 32))
 
     return pc2(key)
 
+
 def permutation(data):
-    p = LinearTransformation((16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25))
+    p = LinearTransformation((16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3, 9,
+                              19, 13, 30, 6, 22, 11, 4, 25))
 
     return p(data)
 
+
 def permutation_inverted(data):
-    p_inv = LinearTransformation((9, 17, 23, 31, 13, 28, 2, 18, 24, 16, 30, 6, 26, 20, 10, 1, 8, 14, 25, 3, 4, 29, 11, 19, 32, 12, 22, 7, 5, 27, 15, 21))
+    p_inv = LinearTransformation((9, 17, 23, 31, 13, 28, 2, 18, 24, 16, 30, 6, 26, 20, 10, 1, 8, 14, 25, 3, 4, 29, 11,
+                                  19, 32, 12, 22, 7, 5, 27, 15, 21))
 
     return p_inv(data)
+
 
 def round_key(no, key):
     def rotate(array, rotation):
@@ -435,12 +455,13 @@ def round_key(no, key):
 
     return pc2(key)
 
+
 def get_sboxes():
     patterns = [
         [
-            (14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7), 
-            (0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8), 
-            (4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0), 
+            (14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7),
+            (0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8),
+            (4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0),
             (15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13)
         ],
         [
@@ -489,6 +510,7 @@ def get_sboxes():
 
     return (Sbox(pattern) for pattern in patterns)
 
+
 class Cipher:
     def __init__(self, key):
         self.key = key if type(key) is bytearray else bytearray(key)
@@ -503,7 +525,7 @@ class Cipher:
         left, right = divide(plaintext)
 
         for round in range(self.rounds):
-            round += 1 # increment to use values from 1
+            round += 1  # increment to use values from 1
 
             right, left = self._round(round, left, right)
 
@@ -539,3 +561,11 @@ class Cipher:
         left = bytearray([l ^ r for (l, r) in zip(left, self.f(right, key))])
 
         return (left, right)
+
+
+def random_key():
+    return KeyRandomGenerator().generate()
+
+
+def random_message():
+    return PlaintextRandomGenerator().generate()

@@ -1,7 +1,11 @@
-from des import *
+from des import Cipher, function_s, KeyRandomGenerator, LinearTransformation, permutation, permutation_inverted, \
+    PlaintextRandomGenerator, Sbox
+
 
 def test_cipher():
-    tuples = [("618A5B261AE3CD32", "46112C8680041B44", "060FBE89802B13AE"), ("C4F7A426A7D6430E", "771627F0C72351B4", "FB948449EA540995"), ("895D3E3885D3C289", "6916B343114A0876", "C3B914320945A917")]
+    tuples = [("618A5B261AE3CD32", "46112C8680041B44", "060FBE89802B13AE"),
+              ("C4F7A426A7D6430E", "771627F0C72351B4", "FB948449EA540995"),
+              ("895D3E3885D3C289", "6916B343114A0876", "C3B914320945A917")]
 
     for key, plaintext, ciphertext in tuples:
         key = bytearray.fromhex(key)
@@ -15,6 +19,7 @@ def test_cipher():
         assert cipher.encrypt(plaintext) == cipher.encrypt(plaintext)
         assert cipher.decrypt(ciphertext) == cipher.decrypt(ciphertext)
 
+
 def test_function_s():
     dataset = [[0x64, 0x79, 0x11, 0xCD, 0x7C, 0x74]]
     results = [[0x97, 0x44, 0xFE, 0x9A]]
@@ -23,6 +28,7 @@ def test_function_s():
         data = bytearray(data)
         expected = bytearray(expected)
         assert expected == function_s(data)
+
 
 def test_linear_transformation():
     pattern = (1, 2, 3, 4, 5, 6, 7, 8)
@@ -66,6 +72,7 @@ def test_linear_transformation():
         expected = bytearray(expected)
         assert expected == lt4(data)
 
+
 def test_key_random_generator():
     generator = KeyRandomGenerator()
 
@@ -78,6 +85,7 @@ def test_key_random_generator():
             if (byte & (1 << i)) > 0:
                 bits += 1
         assert 1 == (bits % 2)
+
 
 def test_plaintext_random_generator():
     def test_plaintext(plaintext):
@@ -97,12 +105,15 @@ def test_plaintext_random_generator():
         test_plaintext(plaintext)
     assert difference == bytearray(p0 ^ p1 for p0, p1 in zip(plaintextes[0], plaintextes[1]))
 
+
 def test_permutation_inverted():
-    dataset = [[0x12, 0x34, 0x56, 0x78], [0xAB, 0xCD, 0xDC, 0xBA], [0x1D, 0xE2, 0x54, 0x16], [0x82, 0x32, 0xAF, 0x3B], [0x23, 0xD7, 0x10, 0xE0]]
+    dataset = [[0x12, 0x34, 0x56, 0x78], [0xAB, 0xCD, 0xDC, 0xBA], [0x1D, 0xE2, 0x54, 0x16], [0x82, 0x32, 0xAF, 0x3B],
+               [0x23, 0xD7, 0x10, 0xE0]]
 
     for data in dataset:
         data = bytearray(data)
         assert data == permutation_inverted(permutation(data))
+
 
 def test_sbox():
     pattern = [[1, 2], [0, 3]]
